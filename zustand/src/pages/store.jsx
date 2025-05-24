@@ -1,23 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router";
-import {create} from 'zustand';
+import { create } from "zustand";
 
-const useProductStore = create((set)=>{
-  return{
-    products :[],
-    setProducts : ()=>{
-      return set({
-        products :[1,2,3],
-      });
-    }
-  }
-})
+const fetchProduct = () => {
+  return axios.get("https://fakestoreapi.com/products").then(res => res.data);
+};
 
-function ProductsList(pros) {
+const useProductStore = create((set) => ({
+  products: [],
+  isLoading: false,
+  loadProducts: async () => {
+    set({ isLoading: true });
+    const data = await fetchProduct();
+    set({ products: data, isLoading: false });
+  },
+}));
+
+function ProductsList() {
+  const products = useProductStore((state) => state.products);
+
   return (
     <div>
-      {pros.products.map((product) => (
+      {products.map((product) => (
         <ul key={product.id}>
           <Link style={{ color: "white" }} to={`/store/dp/${product.id}`}>
             {product.title}
@@ -29,18 +34,18 @@ function ProductsList(pros) {
 }
 
 const Store = () => {
-  const store = useProductStore();
-  console.log(store)
+  const loadProducts = useProductStore((state) => state.loadProducts);
+  const isLoading = useProductStore((state) => state.isLoading); 
   useEffect(() => {
-    axios.get("https://fakestoreapi.com/products").then((response) => {
-      store.setProducts();
-    });
-  }, []);
+    loadProducts();
+  }, [loadProducts]);
+
   return (
     <>
-      <div>store</div>
+      <div className="text-white">Store</div>
       <hr />
-      <ProductsList products={products} />
+      {isLoading && <h1>Loading..</h1>}
+      <ProductsList />
     </>
   );
 };
